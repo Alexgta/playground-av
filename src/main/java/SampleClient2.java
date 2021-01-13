@@ -43,6 +43,9 @@ public class SampleClient2 implements IClientInterceptor {
         IGenericClient client = fhirContext.newRestfulGenericClient("http://hapi.fhir.org/baseR4");
         client.registerInterceptor(new LoggingInterceptor(false));
 
+        String testName1 = "\"Smith\", \"Lee\"";    //- doesn't work
+        String testName2 = "Smith, Lee";            //- doesn't work
+
         // Search for Patient resources
         Bundle response = client
                 .search()
@@ -50,13 +53,17 @@ public class SampleClient2 implements IClientInterceptor {
                 //.where(Patient.FAMILY.matches().value("SMITH"))
                 //  As I understant: I have to change it to:
                 //  https://hapifhir.io/hapi-fhir/docs/client/generic_client.html
-                .where(Patient.FAMILY.matches().values(allNames.toString()))
+
+                //.where(Patient.FAMILY.matches().values(allNames.toString()))  - doesn't work
+                //.where(Patient.FAMILY.matches().values(testName1))            - doesn't work
+                //.where(Patient.FAMILY.matches().values(testName2))            - doesn't work
+
+                .where(Patient.FAMILY.matches().values("Smith", "Baker"))
                 .returnBundle(Bundle.class)
                 .execute();
         List<Bundle.BundleEntryComponent> myEntries = response.getEntry();
         System.out.println("Size: " + myEntries.size());
     }
-
 
     // found one example:
     // https://github.com/hapifhir/hapi-fhir/blob/master/hapi-fhir-client/src/main/java/ca/uhn/fhir/rest/client/interceptor/LoggingInterceptor.java
