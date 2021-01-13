@@ -10,18 +10,33 @@ import org.apache.commons.io.IOUtils;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Scanner;
 
 
 public class SampleClient2 implements IClientInterceptor {
-    // found one example:
-    // https://github.com/hapifhir/hapi-fhir/blob/master/hapi-fhir-client/src/main/java/ca/uhn/fhir/rest/client/interceptor/LoggingInterceptor.java
 
-
-    public static void main(String[] theArgs) {
+    public static void main(String[] theArgs) throws IOException {
+        StringBuilder allNames = new StringBuilder("");
+        //Get file from resources folder
+        ClassLoader classLoader = SampleClient2.class.getClassLoader();
+        File file = new File(classLoader.getResource("SNames.txt").getFile());
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (allNames.length() < 1) {
+                    allNames.append(line);
+                } else {
+                    allNames.append(" ").append(line);
+                }
+            }
+            scanner.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(allNames);
 
         // Create a FHIR client
         FhirContext fhirContext = FhirContext.forR4();
@@ -32,18 +47,19 @@ public class SampleClient2 implements IClientInterceptor {
         Bundle response = client
                 .search()
                 .forResource("Patient")
-                .where(Patient.FAMILY.matches().value("SMITH"))
+                //.where(Patient.FAMILY.matches().value("SMITH"))
                 //  As I understant: I have to change it to:
-                //      .where(Patient.FAMILY.matches().values("Smith", "Smyth".... 20 names from resource file.))
+                //  https://hapifhir.io/hapi-fhir/docs/client/generic_client.html
+                .where(Patient.FAMILY.matches().values(allNames.toString()))
                 .returnBundle(Bundle.class)
                 .execute();
-
         List<Bundle.BundleEntryComponent> myEntries = response.getEntry();
-
-        System.out.println(myEntries.size());
-
+        System.out.println("Size: " + myEntries.size());
     }
 
+
+    // found one example:
+    // https://github.com/hapifhir/hapi-fhir/blob/master/hapi-fhir-client/src/main/java/ca/uhn/fhir/rest/client/interceptor/LoggingInterceptor.java
     @Override
     public void interceptRequest(IHttpRequest theRequest) {
         // Not sure what for I should use it for.
@@ -57,6 +73,7 @@ public class SampleClient2 implements IClientInterceptor {
             System.out.println("Failed to replay request contents (during logging attempt, actual FHIR call did not fail)" + e);
         }
     }
+
 
     @Override
     public void interceptResponse(IHttpResponse theResponse) throws IOException {
@@ -89,5 +106,27 @@ public class SampleClient2 implements IClientInterceptor {
                 System.out.println("Client response body: (none)");
             }
         }
+    }
+
+
+    // can use it but currently don't
+    //SampleClient2 sampleClient2 = new SampleClient2();
+    //System.out.println(sampleClient2.getFile("SNames.txt"));
+    private String getFile(String fileName) {
+        StringBuilder result = new StringBuilder("");
+        //Get file from resources folder
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource(fileName).getFile());
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                result.append(line).append("\n");
+            }
+            scanner.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result.toString();
     }
 }
