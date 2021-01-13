@@ -12,53 +12,41 @@ import org.hl7.fhir.r4.model.Patient;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 
 public class SampleClient2 implements IClientInterceptor {
 
-    public static void main(String[] theArgs) throws IOException {
-        StringBuilder allNames = new StringBuilder("");
+    public static void main(String[] theArgs) {
+
         //Get file from resources folder
         ClassLoader classLoader = SampleClient2.class.getClassLoader();
         File file = new File(classLoader.getResource("SNames.txt").getFile());
+        List<String> patientList = new ArrayList<>();
         try (Scanner scanner = new Scanner(file)) {
             while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                if (allNames.length() < 1) {
-                    allNames.append(line);
-                } else {
-                    allNames.append(" ").append(line);
-                }
+                //String line = scanner.nextLine();
+                patientList.add(scanner.nextLine());
             }
-            scanner.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(allNames);
+        System.out.println("ListSize: " + patientList.size());
 
         // Create a FHIR client
         FhirContext fhirContext = FhirContext.forR4();
         IGenericClient client = fhirContext.newRestfulGenericClient("http://hapi.fhir.org/baseR4");
         client.registerInterceptor(new LoggingInterceptor(false));
 
-        String testName1 = "\"Smith\", \"Lee\"";    //- doesn't work
-        String testName2 = "Smith, Lee";            //- doesn't work
-
         // Search for Patient resources
         Bundle response = client
                 .search()
                 .forResource("Patient")
                 //.where(Patient.FAMILY.matches().value("SMITH"))
-                //  As I understant: I have to change it to:
-                //  https://hapifhir.io/hapi-fhir/docs/client/generic_client.html
-
-                //.where(Patient.FAMILY.matches().values(allNames.toString()))  - doesn't work
-                //.where(Patient.FAMILY.matches().values(testName1))            - doesn't work
-                //.where(Patient.FAMILY.matches().values(testName2))            - doesn't work
-
-                .where(Patient.FAMILY.matches().values("Smith", "Baker"))
+                .where(Patient.FAMILY.matches().values(patientList))
                 .returnBundle(Bundle.class)
                 .execute();
         List<Bundle.BundleEntryComponent> myEntries = response.getEntry();
@@ -113,27 +101,5 @@ public class SampleClient2 implements IClientInterceptor {
                 System.out.println("Client response body: (none)");
             }
         }
-    }
-
-
-    // can use it but currently don't
-    //SampleClient2 sampleClient2 = new SampleClient2();
-    //System.out.println(sampleClient2.getFile("SNames.txt"));
-    private String getFile(String fileName) {
-        StringBuilder result = new StringBuilder("");
-        //Get file from resources folder
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(fileName).getFile());
-        try (Scanner scanner = new Scanner(file)) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                result.append(line).append("\n");
-            }
-            scanner.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return result.toString();
     }
 }

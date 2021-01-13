@@ -42,7 +42,6 @@
     </dependencies>
 
     <packaging>jar</packaging>
-
     <name>HAPI FHIR Playground</name>
 
     <repositories>
@@ -56,9 +55,7 @@
     </repositories>
 
     <build>
-
         <plugins>
-
             <!-- Tell Maven which Java source version you want to use -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
