@@ -1,10 +1,11 @@
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
-import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class SampleClient {
@@ -26,11 +27,21 @@ public class SampleClient {
                 .returnBundle(Bundle.class)
                 .execute();
 
-        List<Bundle.BundleEntryComponent> myEntries = response.getEntry();
+        System.out.println(response.getEntry().size());
 
+        List<Patient> allPatients = new ArrayList<>();
+        for (Bundle.BundleEntryComponent entryComponent : response.getEntry()) {
+            allPatients.add((Patient) entryComponent.getResource());
 
-        System.out.println(myEntries.size());
+            Patient patient = (Patient) entryComponent.getResource();
+            System.out.println(patient.getName().get(0).getGiven());
+        }
 
+        System.out.println("Once again: ");
+        allPatients.sort(Comparator.comparing(a -> a.getName().get(0).getGiven().toString()));
+        for (Patient patient : allPatients) {
+            System.out.println(patient.getName().get(0).getGiven());
+        }
     }
 
 }
